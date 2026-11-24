@@ -1,1 +1,969 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Gerador de atividades desplugadas de Computação, com código Python para o Google Colab.">
+<title>Gerador de Atividades Desplugadas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#fdfaf1;
+  --grade:#e6e0cf;
+  --lousa:#1f3b3a;
+  --coral:#ff6b4a;
+  --mostarda:#ffc247;
+  --menta:#3fb59a;
+  --tinta:#23262b;
+  --suave:#6d6a60;
+  --radius:20px;
+  --sombra:0 2px 0 rgba(31,59,58,.15),0 14px 30px -12px rgba(31,59,58,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;color:var(--tinta);
+  font:400 16px/1.6 "Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background-color:var(--papel);
+  background-image:
+    linear-gradient(var(--grade) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grade) 1px,transparent 1px);
+  background-size:28px 28px;
+  padding-top:env(safe-area-inset-top,0px);
+}
+h1,h2,h3{font-family:"Fredoka",system-ui,sans-serif;line-height:1.15;margin:0}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--coral);outline-offset:3px;border-radius:10px}
 
+.topo{
+  background:var(--lousa);color:var(--papel);
+  padding:40px 20px 70px;position:relative;overflow:hidden;
+}
+.topo-inner{max-width:1040px;margin:0 auto;display:grid;gap:14px}
+.selo{
+  justify-self:start;background:var(--mostarda);color:var(--lousa);
+  font-weight:800;font-size:.85rem;padding:6px 14px;border-radius:999px;
+}
+.topo h1{font-size:clamp(2rem,5vw,3.3rem);max-width:18ch}
+.topo h1 span{color:var(--mostarda)}
+.topo p{margin:0;max-width:56ch;opacity:.9;font-size:1.05rem}
+.robo{
+  position:absolute;right:-30px;bottom:-40px;width:260px;opacity:.18;pointer-events:none;
+}
+
+main{max-width:1040px;margin:-44px auto 60px;padding:0 16px;display:grid;gap:22px}
+.painel{background:#fff;border-radius:var(--radius);padding:22px;box-shadow:var(--sombra)}
+.rotulo{font-weight:800;font-size:.9rem;color:var(--suave);margin:0 0 12px}
+.rotulo strong{color:var(--tinta);font-family:"Fredoka",sans-serif;font-size:1.15rem;font-weight:600}
+
+.habilidades{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.habilidade{
+  display:flex;flex-direction:column;gap:4px;text-align:left;cursor:pointer;
+  background:var(--papel);border:2.5px solid transparent;border-radius:16px;padding:12px 14px;
+  box-shadow:inset 0 0 0 1px var(--grade);transition:transform .15s ease,border-color .15s ease,background .15s ease;
+}
+.habilidade:hover{transform:translateY(-3px) rotate(-.4deg)}
+.habilidade[aria-pressed="true"]{border-color:var(--coral);background:#fff3ef}
+.habilidade .e{font-size:1.7rem;line-height:1}
+.habilidade b{font-family:"Fredoka",sans-serif;font-weight:600;font-size:1rem}
+.habilidade small{color:var(--suave);font-size:.78rem;line-height:1.3}
+
+.ajustes{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.campo{display:grid;gap:6px;font-weight:800;font-size:.85rem;color:var(--suave);flex:1 1 170px}
+select{
+  padding:11px 14px;border-radius:14px;border:2px solid var(--grade);background:#fff;
+  color:var(--tinta);font-weight:600;cursor:pointer
+}
+
+.acoes{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:0;
+  font-family:"Fredoka",sans-serif;font-weight:600;font-size:1.02rem;
+  padding:13px 22px;border-radius:16px;background:var(--coral);color:#fff;
+  box-shadow:0 5px 0 #d94e2f;transition:transform .08s ease,box-shadow .08s ease;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #d94e2f}
+.btn.sec{background:#fff;color:var(--lousa);box-shadow:inset 0 0 0 2px var(--lousa),0 5px 0 var(--grade)}
+.btn.sec:active{box-shadow:inset 0 0 0 2px var(--lousa),0 1px 0 var(--grade)}
+.btn.verde{background:var(--menta);box-shadow:0 5px 0 #2a8a74}
+.btn.verde:active{box-shadow:0 1px 0 #2a8a74}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.vazio{text-align:center;padding:30px 10px;color:var(--suave)}
+.vazio .ico{font-size:3rem}
+.vazio p{margin:6px 0 0}
+
+.atividade{display:none;gap:22px}
+.atividade.on{display:grid;animation:entrar .35s ease both}
+@keyframes entrar{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.cabecalho{display:grid;gap:10px;border-bottom:2px dashed var(--grade);padding-bottom:16px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{background:var(--papel);box-shadow:inset 0 0 0 1px var(--grade);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:700;color:var(--suave)}
+.tag.m{background:#e7f7f2;color:#1d6d5b;box-shadow:none}
+.cabecalho h2{font-size:clamp(1.5rem,3.4vw,2.1rem)}
+.cabecalho .eixo{font-size:.9rem;color:var(--suave);font-weight:700}
+
+.bloco h3{font-size:1.1rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.bloco ol,.bloco ul{margin:0;padding-left:22px;display:grid;gap:6px}
+.bloco p{margin:0}
+.grade-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:720px){.grade-2{grid-template-columns:1fr}}
+
+.colab{
+  background:var(--lousa);color:#e9f5f2;border-radius:18px;overflow:hidden;
+}
+.colab-topo{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:rgba(255,255,255,.07);
+}
+.colab-topo b{font-family:"Fredoka",sans-serif;font-weight:600}
+.colab pre{
+  margin:0;padding:16px;overflow-x:auto;max-height:340px;
+  font:400 13.5px/1.6 "JetBrains Mono",ui-monospace,Consolas,monospace;
+  white-space:pre;
+}
+.mini{padding:9px 14px;font-size:.9rem;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.mini.sec{box-shadow:none;background:transparent;color:#fff;border:2px solid rgba(255,255,255,.4)}
+
+.gabarito{background:#fff8dd;border-radius:16px;padding:16px;box-shadow:inset 0 0 0 2px #f1d878}
+.gabarito pre{margin:0;white-space:pre-wrap;font:400 14px/1.6 "JetBrains Mono",ui-monospace,Consolas,monospace}
+
+.downloads{display:flex;flex-wrap:wrap;gap:12px;padding-top:4px}
+
+.historico{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{
+  cursor:pointer;border:0;border-radius:999px;padding:6px 12px;background:var(--papel);
+  box-shadow:inset 0 0 0 1.5px var(--grade);font-weight:700;font-size:.82rem;color:var(--suave)
+}
+.chip:hover{color:var(--tinta);box-shadow:inset 0 0 0 1.5px var(--lousa)}
+
+.aviso{font-size:.85rem;color:var(--suave);margin:0}
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120px);
+  background:var(--lousa);color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;
+  box-shadow:var(--sombra);transition:transform .3s ease;z-index:10;max-width:90vw;text-align:center
+}
+.toast.on{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="topo-inner">
+    <span class="selo">Computação desplugada </span>
+    <h1>Uma aula nova a cada clique, <span>sem computador</span> na mão dos alunos</h1>
+    <p>Escolha a habilidade, o nível e o tempo. O gerador monta a atividade completa, com roteiro, gabarito e um desafio em Python pronto para colar no Google Colab.</p>
+  </div>
+  <svg class="robo" viewBox="0 0 200 200" aria-hidden="true">
+    <rect x="40" y="50" width="120" height="110" rx="22" fill="#fdfaf1"/>
+    <circle cx="80" cy="95" r="14" fill="#1f3b3a"/>
+    <circle cx="120" cy="95" r="14" fill="#1f3b3a"/>
+    <rect x="75" y="125" width="50" height="10" rx="5" fill="#1f3b3a"/>
+    <rect x="95" y="20" width="10" height="30" fill="#fdfaf1"/>
+    <circle cx="100" cy="18" r="10" fill="#ffc247"/>
+  </svg>
+</header>
+
+<main>
+
+  <section class="painel" aria-labelledby="t-hab">
+    <p class="rotulo" id="t-hab"><strong>1. Qual habilidade vamos trabalhar?</strong></p>
+    <div class="habilidades" id="habilidades"></div>
+  </section>
+
+  <section class="painel" aria-labelledby="t-aj">
+    <p class="rotulo" id="t-aj"><strong>2. Ajuste a turma</strong></p>
+    <div class="ajustes">
+      <label class="campo">Nível
+        <select id="nivel">
+          <option value="ini">Anos iniciais (1º ao 5º)</option>
+          <option value="fund2" selected>Anos finais (6º ao 9º)</option>
+          <option value="medio">Ensino médio</option>
+        </select>
+      </label>
+      <label class="campo">Duração da aula
+        <select id="tempo">
+          <option value="15 min">15 minutos</option>
+          <option value="30 min" selected>30 minutos</option>
+          <option value="45 min">45 minutos</option>
+          <option value="60 min">60 minutos</option>
+        </select>
+      </label>
+      <label class="campo">Organização
+        <select id="grupo">
+          <option value="duplas" selected>Em duplas</option>
+          <option value="trios">Em trios</option>
+          <option value="individual">Individual</option>
+          <option value="equipes">Equipes de 4 a 5</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="painel acoes-painel" aria-label="Gerar">
+    <div class="acoes">
+      <button class="btn" id="gerar" type="button">✨ Gerar atividade</button>
+      <button class="btn sec" id="outra" type="button" disabled>🎲 Outra atividade</button>
+      <p class="aviso" id="contador">Nenhuma atividade gerada ainda.</p>
+    </div>
+  </section>
+
+  <section class="painel vazio" id="vazio">
+    <div class="ico" aria-hidden="true">🧩</div>
+    <p><strong>Pronto para começar?</strong></p>
+    <p>Escolha uma habilidade acima e clique em “Gerar atividade”.</p>
+  </section>
+
+  <article class="painel atividade" id="atividade" aria-live="polite">
+    <header class="cabecalho">
+      <div class="tags" id="tags"></div>
+      <h2 id="titulo"></h2>
+      <p class="eixo" id="eixo"></p>
+    </header>
+
+    <div class="grade-2">
+      <div class="bloco">
+        <h3>🎯 Objetivo</h3>
+        <p id="objetivo"></p>
+      </div>
+      <div class="bloco">
+        <h3>🧰 Materiais</h3>
+        <ul id="materiais"></ul>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h3>🗺️ Passo a passo</h3>
+      <ol id="passos"></ol>
+    </div>
+
+    <div class="bloco">
+      <h3>💬 Perguntas para a discussão</h3>
+      <ul id="perguntas"></ul>
+    </div>
+
+    <div class="bloco">
+      <h3>🐍 Desafio no Google Colab (Python)</h3>
+      <div class="colab">
+        <div class="colab-topo">
+          <b id="colab-nome">Código de apoio</b>
+          <div class="acoes">
+            <button class="btn sec mini" id="copiar" type="button">📋 Copiar código</button>
+            <a class="btn verde mini" href="https://colab.research.google.com/#create=true" target="_blank" rel="noopener">Abrir Colab ↗</a>
+          </div>
+        </div>
+        <pre><code id="codigo"></code></pre>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h3>🔑 Gabarito para o professor</h3>
+      <div class="gabarito"><pre id="gabarito"></pre></div>
+    </div>
+
+    <div class="bloco">
+      <h3>♿ Adaptações</h3>
+      <p id="adaptacao"></p>
+    </div>
+
+    <div class="downloads">
+      <button class="btn" id="baixar-pdf" type="button">📄 Baixar em PDF</button>
+      <button class="btn verde" id="baixar-word" type="button">📝 Baixar em Word</button>
+    </div>
+  </article>
+
+  <section class="painel" aria-labelledby="t-hist">
+    <p class="rotulo" id="t-hist"><strong>Atividades desta sessão</strong></p>
+    <div class="historico" id="historico"><span class="aviso">Suas atividades geradas aparecem aqui para você reabrir.</span></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   Utilitários
+   ============================================================ */
+const R = a => a[Math.floor(Math.random() * a.length)];
+const I = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const embaralhar = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = I(0, i); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const slug = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase().replace(/^-|-$/g, '');
+
+const TEMAS = [
+  'robô explorador de Marte', 'cozinheira de pizzas', 'entregador de bicicleta',
+  'bibliotecária da escola', 'time de futebol de rua', 'jardineiro da horta escolar',
+  'astronauta em missão', 'dono de um pet shop', 'equipe da feira de ciências', 'organizadora da festa junina'
+];
+const NOMES = ['Ana', 'Bruno', 'Carla', 'Diego', 'Helena', 'Igor', 'Júlia', 'Lucas', 'Marina', 'Otávio', 'Paula', 'Rafael'];
+const CORES = ['vermelho', 'azul', 'verde', 'amarelo', 'laranja', 'roxo'];
+
+const MATERIAIS_BASE = ['Quadro ou lousa', 'Caneta e papel', 'Fita crepe'];
+
+const ADAPTACAO = {
+  ini: 'Use figuras, cores e objetos concretos (tampinhas, pedrinhas) no lugar de texto. Para quem lê devagar, leia os comandos em voz alta.',
+  fund2: 'Para quem terminar cedo, peça que criem um novo desafio com outros comandos. Para quem tem dificuldade, forneça o primeiro passo já resolvido.',
+  medio: 'Peça que expliquem a lógica por escrito antes de rodar o código. Quem avança pode generalizar a solução para qualquer tamanho de entrada.'
+};
+
+const NIVEL_NOME = { ini: 'Anos iniciais', fund2: 'Anos finais', medio: 'Ensino médio' };
+
+/* ============================================================
+   Habilidades e geradores
+   Cada gerador devolve uma atividade nova, com números, temas
+   e sequências sorteados a cada chamada.
+   ============================================================ */
+const HABILIDADES = [
+  { id: 'alg', emoji: '🤖', nome: 'Algoritmos', desc: 'Sequência de passos que resolve uma tarefa', eixo: 'Pensamento computacional · Algoritmos' },
+  { id: 'dec', emoji: '🧱', nome: 'Decomposição', desc: 'Quebrar um problema grande em partes', eixo: 'Pensamento computacional · Decomposição' },
+  { id: 'pad', emoji: '🎨', nome: 'Padrões', desc: 'Encontrar regularidades para prever o próximo', eixo: 'Pensamento computacional · Reconhecimento de padrões' },
+  { id: 'abs', emoji: '🗺️', nome: 'Abstração', desc: 'Manter só o que importa para resolver', eixo: 'Pensamento computacional · Abstração' },
+  { id: 'cond', emoji: '🚦', nome: 'Condicionais', desc: 'Tomar decisões com se, senão e regras', eixo: 'Pensamento computacional · Estruturas de decisão' },
+  { id: 'lac', emoji: '🔁', nome: 'Laços', desc: 'Repetir ações sem reescrever tudo', eixo: 'Pensamento computacional · Estruturas de repetição' },
+  { id: 'dep', emoji: '🔍', nome: 'Depuração', desc: 'Achar e corrigir o erro escondido', eixo: 'Pensamento computacional · Depuração' },
+  { id: 'bin', emoji: '💡', nome: 'Binário', desc: 'Representar informação só com 0 e 1', eixo: 'Mundo digital · Representação de dados' },
+  { id: 'var', emoji: '📦', nome: 'Variáveis', desc: 'Guardar e usar dados com nomes claros', eixo: 'Pensamento computacional · Variáveis e tipos de dados' },
+  { id: 'fun', emoji: '🧪', nome: 'Funções', desc: 'Criar receitas reutilizáveis', eixo: 'Pensamento computacional · Funções' }
+];
+
+function base(P, o) {
+  return {
+    ...o,
+    nivel: NIVEL_NOME[P.nivel],
+    tempo: P.tempo,
+    grupo: P.grupo,
+    materiais: [...(o.materiais || []), ...MATERIAIS_BASE].slice(0, 7),
+    adaptacao: ADAPTACAO[P.nivel],
+    assinatura: o.skillId + '|' + o.titulo
+  };
+}
+
+const GERADORES = {};
+
+GERADORES.alg = P => {
+  const mov = { cima: [0, 1], baixo: [0, -1], direita: [1, 0], esquerda: [-1, 0] };
+  const qtd = I(3, P.lim);
+  const cmds = Array.from({ length: qtd }, () => R(Object.keys(mov)));
+  let x = 0, y = 0;
+  const trilha = cmds.map(c => { x += mov[c][0]; y += mov[c][1]; return `${c} -> (${x}, ${y})`; });
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'alg',
+    titulo: `Missão do ${tema}: ${qtd} comandos`,
+    habilidade: 'Algoritmos',
+    eixo: HABILIDADES[0].eixo,
+    objetivo: 'Entender que um algoritmo é uma sequência ordenada de comandos e prever o resultado antes de executar.',
+    materiais: ['Grade de 5x5 desenhada no chão ou em papel', 'Cartões com cima, baixo, direita e esquerda', 'Uma pedrinha ou objeto que representa o robô'],
+    passos: [
+      'Desenhe a grade e posicione o robô no centro (coordenada 0, 0).',
+      'Mostre a sequência de cartões em ordem e leia cada comando em voz alta.',
+      'Cada dupla anota onde o robô vai parar antes de mover a peça.',
+      'Um aluno executa a sequência passo a passo enquanto o colega confere.',
+      'Compare a trilha com o código Python: o resultado deve ser idêntico.'
+    ],
+    perguntas: [
+      'Se trocarmos a ordem de dois comandos, a posição final muda? Por quê?',
+      'Qual seria a sequência mais curta para voltar à origem?'
+    ],
+    colabNome: 'Simulador de robô na grade',
+    python: `comandos = ${JSON.stringify(cmds)}
+movimentos = {"cima": (0, 1), "baixo": (0, -1), "direita": (1, 0), "esquerda": (-1, 0)}
+
+x, y = 0, 0
+for comando in comandos:
+    dx, dy = movimentos[comando]
+    x += dx
+    y += dy
+    print(comando, "->", (x, y))
+
+print("Posição final:", (x, y))`,
+    gabarito: trilha.join('\n') + `\n\nPosição final: (${x}, ${y})`
+  });
+};
+
+GERADORES.dec = P => {
+  const TAREFAS = {
+    'fazer um suco natural': ['Pegar as frutas e a jarra', 'Lavar as frutas', 'Cortar as frutas em pedaços', 'Colocar frutas e água no liquidificador', 'Bater até ficar homogêneo', 'Servir no copo com gelo'],
+    'organizar uma excursão': ['Escolher o destino', 'Pedir autorização aos responsáveis', 'Calcular o custo por aluno', 'Reservar o transporte', 'Montar a lista de materiais', 'Definir o horário de saída'],
+    'plantar uma muda no vaso': ['Escolher o vaso com furos', 'Colocar pedrinhas no fundo', 'Adicionar terra até a metade', 'Retirar a muda da embalagem', 'Posicionar a muda no centro', 'Completar com terra e regar']
+  };
+  const tarefa = R(Object.keys(TAREFAS));
+  const corretos = TAREFAS[tarefa];
+  const misturados = embaralhar(corretos.map((p, i) => [i + 1, p]));
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'dec',
+    titulo: `Quebra-cabeça: ${tarefa}`,
+    habilidade: 'Decomposição',
+    eixo: HABILIDADES[1].eixo,
+    objetivo: 'Dividir uma tarefa complexa em etapas menores e ordená-las, percebendo que cada parte pode ser resolvida separadamente.',
+    materiais: ['Tiras de papel com cada etapa escrita', 'Envelope por dupla', `Ideia extra: adapte ao ${tema}`],
+    passos: [
+      `Anuncie a tarefa: ${tarefa}.`,
+      'Entregue às duplas um envelope com as etapas embaralhadas.',
+      'As duplas montam a ordem correta e justificam cada escolha.',
+      'Discuta quais etapas poderiam ser feitas ao mesmo tempo.',
+      'Mostre o código Python e compare a estratégia de ordenação.'
+    ],
+    perguntas: [
+      'Você conseguiu dividir a tarefa sem olhar a ordem final? Qual foi o critério?',
+      'Que parte seria mais difícil de explicar para um robô? Por quê?'
+    ],
+    colabNome: 'Ordenando etapas da tarefa',
+    python: `passos = ${JSON.stringify(misturados.map(([n, p]) => [n, p]))}
+
+print("Etapas embaralhadas:")
+for numero, passo in passos:
+    print(numero, passo)
+
+print("\\nOrdem correta:")
+for numero, passo in sorted(passos):
+    print(numero, passo)`,
+    gabarito: corretos.map((p, i) => `${i + 1}. ${p}`).join('\n')
+  });
+};
+
+GERADORES.pad = P => {
+  const k = P.nivel === 'ini' ? I(2, 3) : I(2, 4);
+  const base_ = embaralhar(CORES).slice(0, k);
+  const L = 2 * k + 1;
+  const seq = Array.from({ length: L }, (_, i) => base_[i % k]);
+  const prox = [0, 1, 2].map(i => base_[(L + i) % k]);
+  return base(P, {
+    skillId: 'pad',
+    titulo: `Sequência de cores com período ${k}`,
+    habilidade: 'Padrões',
+    eixo: HABILIDADES[2].eixo,
+    objetivo: 'Identificar a regularidade em uma sequência, descrever o padrão com palavras e usá-lo para prever elementos seguintes.',
+    materiais: ['Cartões coloridos ou tiras de papel nas cores da sequência', 'Folha com a sequência desenhada'],
+    passos: [
+      'Monte no quadro a sequência de cores com o último espaço vazio.',
+      'Peça que as duplas descrevam o padrão em uma frase.',
+      'Desafie-as a prever os próximos três elementos sem tocar nos cartões.',
+      'Verifique a previsão e discuta: quantas cores se repetem antes de o padrão recomeçar?',
+      'Mostre o código Python, que usa a divisão com resto para prever.'
+    ],
+    perguntas: [
+      'Qual é o tamanho do bloco que se repete? Como você percebeu?',
+      'Como você faria para prever o elemento número 100 sem contar um por um?'
+    ],
+    colabNome: 'Previsão por padrão repetido',
+    python: `sequencia = ${JSON.stringify(seq)}
+periodo = ${k}
+
+proximos = [sequencia[(len(sequencia) + i) % periodo] for i in range(3)]
+print("Sequência observada:", sequencia)
+print("Próximos três elementos:", proximos)`,
+    gabarito: `Bloco que se repete: ${base_.join(', ')} (período ${k})\nPróximos três elementos: ${prox.join(', ')}`
+  });
+};
+
+GERADORES.abs = P => {
+  const local = R(['escola', 'feira livre', 'praça', 'parque']);
+  const tema = R(TEMAS);
+  const info = {
+    nome: `${local[0].toUpperCase() + local.slice(1)} do bairro`,
+    endereço: `Rua ${R(['das Flores', 'do Sol', 'dos Pinhais', 'Azul'])}, ${I(10, 999)}`,
+    'cor da fachada': R(['azul', 'amarela', 'verde', 'branca']),
+    'número de janelas': I(4, 20),
+    'horário de funcionamento': `${I(7, 9)}h às ${I(16, 19)}h`,
+    rota_principal: ['portão', 'corredor central', 'quadra'],
+    'nome do zelador': R(NOMES)
+  };
+  const essenciais = ['rota_principal'];
+  const removidos = Object.keys(info).filter(k => !essenciais.includes(k));
+  return base(P, {
+    skillId: 'abs',
+    titulo: `Mapa mínimo: caminho até a quadra (${tema})`,
+    habilidade: 'Abstração',
+    eixo: HABILIDADES[3].eixo,
+    objetivo: 'Separar informações essenciais de detalhes irrelevantes para resolver um problema, que é a base de qualquer modelo.',
+    materiais: ['Ficha com todas as informações do local', 'Folha em branco para o mapa simplificado'],
+    passos: [
+      'Entregue a ficha completa do local aos alunos.',
+      'Peça que marquem apenas o que é necessário para chegar à quadra.',
+      'Comparem: que informações foram descartadas e por quê?',
+      'Discuta que um mapa do metrô também ignora distâncias reais.',
+      'Mostre o código Python que filtra só as chaves essenciais.'
+    ],
+    perguntas: [
+      'Se a quadra mudasse de lugar, quais informações do mapa seriam úteis?',
+      'O que você perderia se removesse também a rota? Isso ainda ajudaria alguém?'
+    ],
+    colabNome: 'Filtrando informações essenciais',
+    python: `local = ${JSON.stringify(info, null, 4)}
+
+essenciais = ["rota_principal"]
+
+resumo = {}
+for chave in essenciais:
+    resumo[chave] = local[chave]
+
+print("Mapa simplificado:", resumo)`,
+    gabarito: `Mantidas: ${essenciais.join(', ')}\nDescartadas: ${removidos.join(', ')}`
+  });
+};
+
+GERADORES.cond = P => {
+  const corte = R([10, 12, 14]);
+  const idades = Array.from({ length: 4 }, () => I(3, 80));
+  const saidas = idades.map(i => i < corte ? 'entrada gratuita' : i < 60 ? 'entrada normal' : 'entrada com desconto');
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'cond',
+    titulo: `Portaria da ${tema}: regra de entrada`,
+    habilidade: 'Condicionais',
+    eixo: HABILIDADES[4].eixo,
+    objetivo: 'Construir regras com se, senão e senão se, e prever qual caminho o programa seguirá para cada entrada.',
+    materiais: ['Cartões com idades diferentes', 'Quadro com a regra de entrada escrita'],
+    passos: [
+      `Escreva a regra: menores de ${corte} anos entram grátis; de ${corte} a 59 pagam inteira; 60 ou mais têm desconto.`,
+      'Sorteie um cartão de idade para cada dupla e peça que decida o valor.',
+      'Compare as respostas e identifique a condição que mudou o resultado.',
+      'Mostre o código Python e teste com outras idades da turma.'
+    ],
+    perguntas: [
+      'O que aconteceria se invertêssemos a ordem das condições?',
+      'Qual idade está exatamente na fronteira entre duas regras? Ela entra em qual?'
+    ],
+    colabNome: 'Regra de entrada com condicionais',
+    python: `idades = ${JSON.stringify(idades)}
+
+for idade in idades:
+    if idade < ${corte}:
+        print(idade, "-> entrada gratuita")
+    elif idade < 60:
+        print(idade, "-> entrada normal")
+    else:
+        print(idade, "-> entrada com desconto")`,
+    gabarito: idades.map((a, i) => `${a} anos -> ${saidas[i]}`).join('\n')
+  });
+};
+
+GERADORES.lac = P => {
+  const n = I(3, Math.max(4, P.lim));
+  const seq = ['palma', 'palma', 'pulo'];
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'lac',
+    titulo: `Coreografia do(a) ${tema}: ${n} repetições`,
+    habilidade: 'Laços de repetição',
+    eixo: HABILIDADES[5].eixo,
+    objetivo: 'Perceber que um laço repete um bloco de instruções, reduzindo o trabalho de escrever tudo de novo.',
+    materiais: ['Espaço livre para a turma se movimentar', 'Cartão com a sequência: palma, palma, pulo'],
+    passos: [
+      'Ensine a sequência de três movimentos à turma.',
+      `Peça que executem a sequência exatamente ${n} vezes, sem contar em voz alta.`,
+      'Pare e pergunte quantos movimentos foram feitos no total.',
+      'Repita, mas agora diga “repita ' + n + ' vezes” uma única vez, e perceba a economia.',
+      'Mostre o laço for em Python e compare com a versão escrita à mão.'
+    ],
+    perguntas: [
+      'Como você saberia o total sem contar? Qual conta ajuda?',
+      'Se o número de repetições fosse desconhecido, o que mudaria no comando?'
+    ],
+    colabNome: 'Laço de repetição',
+    python: `sequencia = ${JSON.stringify(seq)}
+repeticoes = ${n}
+
+contador = 0
+for rep in range(repeticoes):
+    for passo in sequencia:
+        print(passo)
+        contador += 1
+
+print("Total de movimentos:", contador)`,
+    gabarito: `Movimentos por repetição: ${seq.length}\nTotal: ${seq.length} x ${n} = ${seq.length * n}`
+  });
+};
+
+GERADORES.dep = P => {
+  const n = I(4, Math.max(5, P.lim));
+  const variante = R(['soma', 'sobrescrita']);
+  let titulo, buggy, esperado, saida, explicacao, corrigido;
+  if (variante === 'soma') {
+    esperado = n * (n + 1) / 2;
+    saida = (n - 1) * n / 2;
+    buggy = `n = ${n}\nsoma = 0\nfor i in range(1, n):\n    soma += i\n\nprint(soma)  # Esperado: ${esperado}`;
+    corrigido = `n = ${n}\nsoma = 0\nfor i in range(1, n + 1):\n    soma += i\n\nprint(soma)`;
+    titulo = `Caça ao erro: somar de 1 até ${n}`;
+    explicacao = `range(1, n) não inclui o próprio n. A saída errada é ${saida}; a correta é ${esperado}. Solução: range(1, n + 1).`;
+  } else {
+    esperado = n * (n + 1) / 2;
+    saida = n;
+    buggy = `n = ${n}\nsoma = 0\nfor i in range(1, n + 1):\n    soma = i\n\nprint(soma)  # Esperado: ${esperado}`;
+    corrigido = `n = ${n}\nsoma = 0\nfor i in range(1, n + 1):\n    soma += i\n\nprint(soma)`;
+    titulo = `Caça ao erro: acumular a soma`;
+    explicacao = `A variável soma é reescrita a cada volta, em vez de acumular. A saída errada é ${saida}; a correta é ${esperado}. Solução: usar soma += i.`;
+  }
+  return base(P, {
+    skillId: 'dep',
+    titulo,
+    habilidade: 'Depuração',
+    eixo: HABILIDADES[6].eixo,
+    objetivo: 'Ler um algoritmo com erro, prever a saída, comparar com o resultado esperado e localizar a causa.',
+    materiais: ['Cópia do código com erro para cada dupla', 'Lápis para marcar a linha suspeita'],
+    passos: [
+      'Entregue o código com erro e não diga onde está o problema.',
+      'As duplas calculam a saída esperada à mão e comparam com a que o código daria.',
+      'Pedem que marquem a linha responsável e expliquem por que ela causa o erro.',
+      'Corrijam e testem com outro valor de n.',
+      'Rodem no Colab a versão original e depois a corrigida.'
+    ],
+    perguntas: [
+      'Como você percebeu que havia um erro, mesmo sem executar o código?',
+      'Qual teste rápido poderia pegar esse tipo de erro antes da entrega?'
+    ],
+    colabNome: 'Versão com erro (depure você)',
+    python: buggy,
+    gabarito: `${explicacao}\n\nVersão corrigida:\n${corrigido}`
+  });
+};
+
+GERADORES.bin = P => {
+  const max = P.nivel === 'ini' ? 15 : P.nivel === 'fund2' ? 31 : 63;
+  const n = I(5, max);
+  const bits = n.toString(2);
+  const cartoes = [16, 8, 4, 2, 1].filter(v => v <= Math.pow(2, Math.ceil(Math.log2(n + 1))) * 2);
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'bin',
+    titulo: `Cartões binários: o número ${n}`,
+    habilidade: 'Representação binária',
+    eixo: HABILIDADES[7].eixo,
+    objetivo: 'Entender que computadores representam informações com apenas dois símbolos e converter números entre decimal e binário.',
+    materiais: ['Cartões com valores 1, 2, 4, 8, 16, 32 (com alguns extras)', `Cartões de “ligado” e “desligado” (use o tema do ${tema})`],
+    passos: [
+      'Mostre os cartões de potências de 2 e pergunte o que cada um representa.',
+      `Peça que as duplas escolham cartões até formar o número ${n}.`,
+      'Quem tiver o cartão está “ligado” (1); quem não tiver está “desligado” (0).',
+      'Escreva a sequência de 0 e 1 e compare com a de outras duplas.',
+      'Mostre no Colab a conversão com bin() e int(..., 2).'
+    ],
+    perguntas: [
+      'Por que o binário precisa de tantas casas para números maiores?',
+      'Como um celular poderia guardar a letra A usando apenas esses símbolos?'
+    ],
+    colabNome: 'Conversão decimal e binário',
+    python: `n = ${n}
+
+print("Binário de", n, "é", bin(n))
+print("Voltando ao decimal:", int("${bits}", 2))`,
+    gabarito: `${n} em binário: ${bits}\nCartões ligados: ${[...bits].map((b, i) => b === '1' ? Math.pow(2, bits.length - 1 - i) : null).filter(Boolean).join(' + ')} = ${n}`
+  });
+};
+
+GERADORES.var = P => {
+  const nome = R(NOMES);
+  const notas = [0, 1, 2].map(() => I(4, 10));
+  const media = (notas[0] + notas[1] + notas[2]) / 3;
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'var',
+    titulo: `Ficha de ${nome}: guardando notas`,
+    habilidade: 'Variáveis e tipos de dados',
+    eixo: HABILIDADES[8].eixo,
+    objetivo: 'Usar variáveis para guardar valores com nomes claros e calcular resultados a partir deles, distinguindo texto de número.',
+    materiais: ['Ficha de papel com campos: nome, nota 1, nota 2, nota 3, média', `Caixas de papel rotuladas como “variáveis” (tema ${tema})`],
+    passos: [
+      'Mostre que cada caixa guarda um valor e tem um nome.',
+      `Preencha a ficha de ${nome} com as três notas, sem calcular a média ainda.`,
+      'Cada dupla calcula a média e escreve o resultado na caixa “media”.',
+      'Troque uma nota e pergunte o que muda. Quem precisa recalcular?',
+      'Mostre o código Python e discuta por que o nome da variável importa.'
+    ],
+    perguntas: [
+      'Por que “nome” precisa ser texto e as notas precisam ser número?',
+      'Se trocarmos “nota_1” por “x”, o programa ainda faz o mesmo? O que se perde?'
+    ],
+    colabNome: 'Variáveis e média',
+    python: `nome = "${nome}"
+nota_1, nota_2, nota_3 = ${notas.join(', ')}
+
+media = (nota_1 + nota_2 + nota_3) / 3
+print(f"{nome}: média {media:.1f}")
+print("Tipo de nome:", type(nome))
+print("Tipo de media:", type(media))`,
+    gabarito: `Média: (${notas.join(' + ')}) / 3 = ${media.toFixed(1)}\nTipo de nome: str (texto)\nTipo de media: float (número com casas decimais)`
+  });
+};
+
+GERADORES.fun = P => {
+  const fruta = R(['laranja', 'maracujá', 'morango', 'abacaxi']);
+  const copos = I(1, 4);
+  const tema = R(TEMAS);
+  return base(P, {
+    skillId: 'fun',
+    titulo: `Receita reutilizável: suco de ${fruta}`,
+    habilidade: 'Funções',
+    eixo: HABILIDADES[9].eixo,
+    objetivo: 'Criar uma função que recebe valores, executa instruções e devolve um resultado, para ser reutilizada com outros dados.',
+    materiais: ['Cartões de receita com passos separados', 'Cartões de ingredientes e quantidades'],
+    passos: [
+      'Entregue às duplas uma receita escrita com dados fixos.',
+      'Peça que identifiquem o que muda de um pedido para outro (fruta e quantidade).',
+      'Transformem a receita em um “cartão reutilizável” com espaços para esses dados.',
+      'Teste a receita trocando o ingrediente, como se fosse o(a) ' + tema + ' pedindo outro suco.',
+      'Mostre a função Python com parâmetros e compare com o cartão.'
+    ],
+    perguntas: [
+      'Quais partes da receita você nunca mudaria? Por que vale a pena escrevê-las uma vez só?',
+      'Se a receita precisasse de um parâmetro novo, como ele entraria na função?'
+    ],
+    colabNome: 'Função com parâmetros',
+    python: `def preparar_suco(fruta, copos):
+    return f"{copos} copo(s) de suco de {fruta}, pronto!"
+
+print(preparar_suco("${fruta}", ${copos}))
+print(preparar_suco("uva", 2))`,
+    gabarito: `1ª chamada: ${copos} copo(s) de suco de ${fruta}, pronto!\n2ª chamada: 2 copo(s) de suco de uva, pronto!`
+  });
+};
+
+/* ============================================================
+   Estado e interface
+   ============================================================ */
+let atual = null;
+let historico = [];
+let habilidadeEscolhida = null;
+let geradas = 0;
+
+const $ = id => document.getElementById(id);
+
+function lerConfig() {
+  const nivel = $('nivel').value;
+  return {
+    nivel,
+    lim: { ini: 4, fund2: 7, medio: 12 }[nivel],
+    tempo: $('tempo').value,
+    grupo: $('grupo').selectedOptions[0].textContent.toLowerCase()
+  };
+}
+
+function montarHabilidades() {
+  $('habilidades').innerHTML = HABILIDADES.map(h => `
+    <button class="habilidade" type="button" data-id="${h.id}" aria-pressed="false">
+      <span class="e" aria-hidden="true">${h.emoji}</span>
+      <b>${esc(h.nome)}</b>
+      <small>${esc(h.desc)}</small>
+    </button>`).join('') + `
+    <button class="habilidade" type="button" data-id="surpresa" aria-pressed="false">
+      <span class="e" aria-hidden="true">🎲</span>
+      <b>Surpreenda-me</b>
+      <small>Uma habilidade sorteada a cada clique</small>
+    </button>`;
+
+  $('habilidades').querySelectorAll('.habilidade').forEach(btn => {
+    btn.addEventListener('click', () => {
+      habilidadeEscolhida = btn.dataset.id;
+      $('habilidades').querySelectorAll('.habilidade').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+      gerar();
+    });
+  });
+}
+
+function sortearHabilidade() {
+  if (!habilidadeEscolhida || habilidadeEscolhida === 'surpresa') {
+    return R(HABILIDADES).id;
+  }
+  return habilidadeEscolhida;
+}
+
+function gerar() {
+  const P = lerConfig();
+  let a, tentativas = 0;
+  do {
+    const id = sortearHabilidade();
+    a = GERADORES[id](P);
+    tentativas++;
+  } while (historico.some(h => h.assinatura === a.assinatura) && tentativas < 25);
+
+  atual = a;
+  historico.unshift(a);
+  historico = historico.slice(0, 12);
+  geradas++;
+  renderizar(a);
+  atualizarHistorico();
+  $('outra').disabled = false;
+  $('contador').textContent = `${geradas} atividade(s) gerada(s) nesta sessão.`;
+  toast('Atividade pronta! 🎉');
+}
+
+function renderizar(a) {
+  $('vazio').style.display = 'none';
+  const art = $('atividade');
+  art.classList.remove('on');
+  void art.offsetWidth;
+  art.classList.add('on');
+
+  $('tags').innerHTML = [
+    `<span class="tag m">${esc(a.habilidade)}</span>`,
+    `<span class="tag">⏱ ${esc(a.tempo)}</span>`,
+    `<span class="tag">👥 ${esc(a.grupo)}</span>`,
+    `<span class="tag">🎓 ${esc(a.nivel)}</span>`
+  ].join('');
+  $('titulo').textContent = a.titulo;
+  $('eixo').textContent = 'BNCC Computação · ' + a.eixo;
+  $('objetivo').textContent = a.objetivo;
+  $('materiais').innerHTML = a.materiais.map(m => `<li>${esc(m)}</li>`).join('');
+  $('passos').innerHTML = a.passos.map(p => `<li>${esc(p)}</li>`).join('');
+  $('perguntas').innerHTML = a.perguntas.map(p => `<li>${esc(p)}</li>`).join('');
+  $('colab-nome').textContent = a.colabNome;
+  $('codigo').textContent = a.python;
+  $('gabarito').textContent = a.gabarito;
+  $('adaptacao').textContent = a.adaptacao;
+  art.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function atualizarHistorico() {
+  $('historico').innerHTML = historico.map((h, i) =>
+    `<button class="chip" type="button" data-i="${i}">${esc(h.habilidade)}: ${esc(h.titulo.slice(0, 34))}${h.titulo.length > 34 ? '…' : ''}</button>`
+  ).join('');
+  $('historico').querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => { atual = historico[+c.dataset.i]; renderizar(atual); });
+  });
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+/* ============================================================
+   Conteúdo para download
+   ============================================================ */
+function textoPlano(a) {
+  const linhas = [];
+  linhas.push(a.titulo, '', `Habilidade: ${a.habilidade}`, `BNCC Computação · ${a.eixo}`,
+    `Nível: ${a.nivel} | Tempo: ${a.tempo} | Organização: ${a.grupo}`, '');
+  linhas.push('OBJETIVO', a.objetivo, '');
+  linhas.push('MATERIAIS', ...a.materiais.map(m => '- ' + m), '');
+  linhas.push('PASSO A PASSO', ...a.passos.map((p, i) => `${i + 1}. ${p}`), '');
+  linhas.push('PERGUNTAS PARA A DISCUSSÃO', ...a.perguntas.map(p => '- ' + p), '');
+  linhas.push('DESAFIO NO GOOGLE COLAB (PYTHON)', a.colabNome, '', a.python, '');
+  linhas.push('GABARITO (PROFESSOR)', a.gabarito, '');
+  linhas.push('ADAPTAÇÕES', a.adaptacao);
+  return linhas;
+}
+
+function baixarPDF() {
+  if (!atual) return;
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    toast('Não foi possível carregar o gerador de PDF. Verifique a conexão.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const margem = 18, largura = 210 - margem * 2, limite = 280;
+  let y = 22;
+
+  const escrever = (texto, tamanho = 11, estilo = 'normal', fonte = 'helvetica', espacoDepois = 1.5) => {
+    doc.setFont(fonte, estilo);
+    doc.setFontSize(tamanho);
+    const linhas = doc.splitTextToSize(String(texto), largura);
+    const altura = tamanho * 0.45;
+    linhas.forEach(l => {
+      if (y > limite) { doc.addPage(); y = 22; }
+      doc.text(l, margem, y);
+      y += altura + 1;
+    });
+    y += espacoDepois;
+  };
+  const secao = titulo => {
+    if (y > limite - 14) { doc.addPage(); y = 22; }
+    y += 3;
+    escrever(titulo.toUpperCase(), 12, 'bold', 'helvetica', 1);
+  };
+
+  escrever(a_titulo(atual), 18, 'bold', 'helvetica', 2);
+  escrever(`Habilidade: ${atual.habilidade}`, 10, 'normal', 'helvetica', 0);
+  escrever(`BNCC Computação · ${atual.eixo}`, 10, 'normal', 'helvetica', 0);
+  escrever(`Nível: ${atual.nivel}  |  Tempo: ${atual.tempo}  |  Organização: ${atual.grupo}`, 10, 'normal', 'helvetica', 3);
+
+  secao('Objetivo'); escrever(atual.objetivo);
+  secao('Materiais'); atual.materiais.forEach(m => escrever('- ' + m, 11, 'normal', 'helvetica', 0)); y += 2;
+  secao('Passo a passo'); atual.passos.forEach((p, i) => escrever(`${i + 1}. ${p}`, 11, 'normal', 'helvetica', 0)); y += 2;
+  secao('Perguntas para a discussão'); atual.perguntas.forEach(p => escrever('- ' + p, 11, 'normal', 'helvetica', 0)); y += 2;
+  secao('Desafio no Google Colab (Python)');
+  escrever(atual.colabNome, 11, 'bold', 'helvetica', 1);
+  escrever(atual.python, 9, 'normal', 'courier', 2);
+  secao('Gabarito (professor)'); escrever(atual.gabarito, 10, 'normal', 'courier');
+  secao('Adaptações'); escrever(atual.adaptacao);
+
+  doc.save(`${slug(atual.titulo)}.pdf`);
+  toast('PDF baixado 📄');
+}
+
+function a_titulo(a) { return a.titulo; }
+
+function baixarWord() {
+  if (!atual) return;
+  const corpo = `
+    <h1>${esc(atual.titulo)}</h1>
+    <p><b>Habilidade:</b> ${esc(atual.habilidade)}<br>
+    <b>BNCC Computação:</b> ${esc(atual.eixo)}<br>
+    <b>Nível:</b> ${esc(atual.nivel)} | <b>Tempo:</b> ${esc(atual.tempo)} | <b>Organização:</b> ${esc(atual.grupo)}</p>
+    <h2>Objetivo</h2><p>${esc(atual.objetivo)}</p>
+    <h2>Materiais</h2><ul>${atual.materiais.map(m => `<li>${esc(m)}</li>`).join('')}</ul>
+    <h2>Passo a passo</h2><ol>${atual.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>
+    <h2>Perguntas para a discussão</h2><ul>${atual.perguntas.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+    <h2>Desafio no Google Colab (Python)</h2>
+    <p><b>${esc(atual.colabNome)}</b></p>
+    <pre style="font-family:Consolas,'Courier New',monospace;background:#f3f4f6;padding:10px;font-size:10pt;white-space:pre-wrap">${esc(atual.python)}</pre>
+    <h2>Gabarito (professor)</h2>
+    <pre style="font-family:Consolas,'Courier New',monospace;background:#fff8dd;padding:10px;font-size:10pt;white-space:pre-wrap">${esc(atual.gabarito)}</pre>
+    <h2>Adaptações</h2><p>${esc(atual.adaptacao)}</p>`;
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8"><title>${esc(atual.titulo)}</title>
+    <style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.4} h1{font-size:20pt;color:#1f3b3a} h2{font-size:13pt;color:#ff6b4a;margin-top:14pt}</style>
+    </head><body>${corpo}</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${slug(atual.titulo)}.doc`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Arquivo Word baixado 📝');
+}
+
+async function copiarCodigo() {
+  if (!atual) return;
+  try {
+    await navigator.clipboard.writeText(atual.python);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = atual.python;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+  toast('Código copiado. Cole no Colab! 🐍');
+}
+
+/* ============================================================
+   Inicialização
+   ============================================================ */
+montarHabilidades();
+$('gerar').addEventListener('click', gerar);
+$('outra').addEventListener('click', gerar);
+$('baixar-pdf').addEventListener('click', baixarPDF);
+$('baixar-word').addEventListener('click', baixarWord);
+$('copiar').addEventListener('click', copiarCodigo);
+</script>
+</body>
+</html>
